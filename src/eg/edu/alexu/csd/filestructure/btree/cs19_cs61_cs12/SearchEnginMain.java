@@ -10,7 +10,7 @@ public class SearchEnginMain {
 		ISearchEngine searchEngine = new SearchEngine();
 		
 		searchEngine.indexDirectory("Directory");
-		searchEngine.indexWebPage("wiki_10");
+		searchEngine.indexWebPage("wiki_04");
 
 	}
 
