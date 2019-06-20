@@ -12,6 +12,7 @@ public class BTree<K extends Comparable<K>, V> implements IBTree<K, V> {
 	private IBTreeNode<K, V> root;
 	private IBTreeNode<K, V> parent;
 	private int minDegree; // t
+	private K successoorKey;
 
 	public BTree(int minDegree) {
 
@@ -302,8 +303,10 @@ public class BTree<K extends Comparable<K>, V> implements IBTree<K, V> {
 	private IBTreeNode<K, V> findHelper(IBTreeNode<K, V> x, K key) {
 		// gets the index of the appropriate node
 		int i = 0;
+		//System.out.println("i in Find : " + i);
 		while (i < x.getNumOfKeys() && key.compareTo(x.getKeys().get(i)) > 0) {
 			i++;
+			//System.out.println("i in Find : " + i);
 		}
 		// checks if the key is found
 		if (i != x.getNumOfKeys()) {
@@ -316,7 +319,7 @@ public class BTree<K extends Comparable<K>, V> implements IBTree<K, V> {
 			return null;
 		}
 		this.parent = x;
-		// recursively call using the appropriate child node
+		
 		return findHelper(x.getChildren().get(i), key);
 
 	}
@@ -332,6 +335,8 @@ public class BTree<K extends Comparable<K>, V> implements IBTree<K, V> {
 
 	@Override
 	public boolean delete(K key) {
+		System.out.println(" ");
+		System.out.println("**DELETION OF : " + key);
 		if (key == null) {
 			throw new RuntimeErrorException(null);
 		}
@@ -340,7 +345,7 @@ public class BTree<K extends Comparable<K>, V> implements IBTree<K, V> {
 		IBTreeNode<K, V> x = new BTreeNode<>();
 		IBTreeNode<K, V> y = new BTreeNode<>();
 		IBTreeNode<K, V> z = new BTreeNode<>();
-		if ((x = find(key)) == null) {
+		if ((x = find((K) key)) == null) {
 			return false;
 		}
 		p = this.parent; // PARENT
@@ -350,230 +355,769 @@ public class BTree<K extends Comparable<K>, V> implements IBTree<K, V> {
 		int nodeIndex = 0;
 		List<K> temp = x.getKeys();
 		for (int i = 0; i < temp.size(); i++) {
-			if (temp.get(i) == key) {
+			if (temp.get(i).equals(key)) {
 				keyIndex = i;
 			}
 		}
+	
 
-		for (int i = 0; i < p.getChildren().size(); i++) {
-			if (p.getChildren().get(i) == x) {
-				nodeIndex = i;
+		System.out.println(" ");
+		if (p != null) {
+			List<IBTreeNode<K, V>> pChildren = p.getChildren();
+			for (int i = 0; i < p.getChildren().size(); i++) {
+				if (p.getChildren().get(i).equals(x)) {
+					nodeIndex = i;
+					break;
+				}
 			}
+			
+			int size = p.getChildren().size();
+			System.out.println("size of Parent Children Before Maodulation : " + size);
+			int limit = p.getNumOfKeys() + 1;
+			
+			if (p.getChildren().size() > limit) {
+				for (int i = limit; i <= p.getChildren().size() + 1; i++) {
+					pChildren.remove(pChildren.size() - 1);
+				}
+			}
+			System.out.println("NodeIndex of x : " + nodeIndex);
+			System.out.println("keyIndex In Node x : " + keyIndex);
+			p.setChildren(pChildren);
+			System.out.println("size of Parent Children After Maodulation : " + p.getChildren().size());
+
+			if (nodeIndex == 0) {
+				y = p.getChildren().get(nodeIndex + 1); // Right_Sibling
+			} else if (nodeIndex >= p.getChildren().size() - 1) {
+				z = p.getChildren().get(nodeIndex - 1); // Left_Sibling
+			} else {
+				y = p.getChildren().get(nodeIndex + 1); // Right_Sibling
+				z = p.getChildren().get(nodeIndex - 1); // Left_Sibling
+			}
+			System.out.println("Parent NODE  : " + p.getKeys());
 		}
 
-		if (nodeIndex == 0) {
-			y = p.getChildren().get(nodeIndex + 1); // Right_Sibling
-		} else if (nodeIndex == p.getChildren().size() - 1) {
-			z = p.getChildren().get(nodeIndex - 1); // Left_Sibling
-		} else {
-			y = p.getChildren().get(nodeIndex + 1); // Right_Sibling
-			z = p.getChildren().get(nodeIndex - 1); // Left_Sibling
-		}
-		
-		boolean shift = false;  //False: ShiftLeft
-								//Right: ShiftRight
+		System.out.println("NodeIndex of x : " + nodeIndex);
+		System.out.println("keyIndex In Node x : " + keyIndex);
+		System.out.println("NODE x : " + x.getKeys());
+		System.out.println("RightSibling NODE : " + y.getKeys());
+		System.out.println("LeftSibling NODE : " + z.getKeys());
+
+		boolean shift = false; // False: ShiftLeft
+								// Right: ShiftRight
 
 		/* ************ CASES ******************** */
 		if (x.isLeaf()) {
-			if (x.getNumOfKeys() >= minDegree) { // CASE1 "Trivial"
+			if (this.root == x) { // CASE1 "Root"
+				System.out.println("CASE 1 'Root'");
+
 				List<K> xKeys = x.getKeys();
 				List<V> xValues = x.getValues();
 				xKeys.remove(keyIndex);
 				xValues.remove(keyIndex);
 				x.setKeys(xKeys);
 				x.setValues(xValues);
-			} else {
-				if (z != null) {  //LeftSiblingFirst
-					if (z.getNumOfKeys() >= minDegree) { // CASE2(a) "Trivial" 
-						K parentKey = parent.getKeys().get(keyIndex - 1);
-						K siblingKey = parent.getChildren().get(nodeIndex - 1).getKeys()
-								.get(parent.getChildren().get(nodeIndex - 1).getNumOfKeys() - 1);
+				x.setNumOfKeys(x.getNumOfKeys() - 1);
 
-						z.getKeys().remove(z.getNumOfKeys() - 1);
-						z.getValues().remove(z.getNumOfKeys() - 1);
-						p.getKeys().remove(keyIndex - 1);
-						p.getValues().remove(keyIndex - 1);
-						p.getKeys().add(siblingKey);
-						p.getValues().add(parent.getChildren().get(nodeIndex - 1).getValues()
-								.get(parent.getChildren().get(nodeIndex - 1).getNumOfKeys() - 1));
-						// Sort
-						x.getKeys().remove(keyIndex);
-						x.getValues().remove(keyIndex);
-						x.getKeys().add(parentKey);
-						x.getValues().add(parent.getValues().get(keyIndex - 1));
-						// Sort
+				if (p != null) {
+					System.out.println("Parent NODE  : " + p.getKeys());
+				}
+				System.out.println("NODE x : " + x.getKeys());
+				System.out.println("RightSibling NODE : " + y.getKeys());
+				System.out.println("LeftSibling NODE : " + z.getKeys());
+
+				return true;
+			}
+			else if (x.getNumOfKeys() >= minDegree) { // CASE1 "Trivial"
+				System.out.println("CASE 1");
+
+				List<K> xKeys = x.getKeys();
+				List<V> xValues = x.getValues();
+				xKeys.remove(keyIndex);
+				xValues.remove(keyIndex);
+				x.setKeys(xKeys);
+				x.setValues(xValues);
+				x.setNumOfKeys(x.getNumOfKeys() - 1);
+
+				if (p != null) {
+					System.out.println("Parent NODE  : " + p.getKeys());
+				}
+				System.out.println("NODE x : " + x.getKeys());
+				System.out.println("RightSibling NODE : " + y.getKeys());
+				System.out.println("LeftSibling NODE : " + z.getKeys());
+
+				return true;
+			} else {
+				if (z.getNumOfKeys() > 0) { // LeftSiblingFirst
+					if (z.getNumOfKeys() >= minDegree) { // CASE2(a) "Trivial"
+						System.out.println("CASE 2(a) 'LeftSibling'");
+
+						stealFromLeftSibling(x, y, z, p, nodeIndex, keyIndex);
+						
+						List<K> xKeys = x.getKeys();
+						List<V> xValues = x.getValues();
+
+						xKeys.remove(keyIndex + 1);
+						xValues.remove(keyIndex + 1);
+						x.setKeys(xKeys);
+						x.setNumOfKeys(xKeys.size());
+						
+						System.out.println("Finally");
+
+						
+						System.out.println("NODE x : " + x.getKeys());
+						if (p != null) {
+							System.out.println("Parent NODE  : " + p.getKeys());
+						}
+						System.out.println("RightSibling NODE : " + y.getKeys());
+						System.out.println("LeftSibling NODE : " + z.getKeys());
+						
 						return true;
 
-					} else if (y != null){	//rightSiblingSecond
-						if (y.getNumOfKeys() >= minDegree) {	// CASE2(a) "Trivial"
-							K parentKey = parent.getKeys().get(keyIndex);
-							K siblingKey = parent.getChildren().get(nodeIndex + 1).getKeys().get(0);
+					} else if (y.getNumOfKeys() > 0) { // rightSiblingSecond
+						if (y.getNumOfKeys() >= minDegree) { // CASE2(a) "Trivial"
+							System.out.println("CASE 2(a) 'RightSibling'");
 
-							y.getKeys().remove(0);
-							y.getValues().remove(0);
-							p.getKeys().remove(keyIndex);
-							p.getValues().remove(keyIndex);
-							p.getKeys().add(siblingKey);
-							p.getValues().add(parent.getChildren().get(nodeIndex + 1).getValues().get(0));
-							// Sort
-							x.getKeys().remove(keyIndex);
-							x.getValues().remove(keyIndex);
-							x.getKeys().add(parentKey);
-							x.getValues().add(parent.getValues().get(keyIndex));
-							// Sort
+							stealFromRightSibling(x, y, z, p, nodeIndex, keyIndex);
+							
+							List<K> xKeys = x.getKeys();
+							List<V> xValues = x.getValues();
+							
+							System.out.println("keyIndex : " + keyIndex);
+
+							xKeys.remove(keyIndex);
+							xValues.remove(keyIndex);
+							x.setKeys(xKeys);
+							x.setNumOfKeys(xKeys.size());
+							
+							System.out.println("Finally");
+
+							
+							System.out.println("NODE x : " + x.getKeys());
+							if (p != null) {
+								System.out.println("Parent NODE  : " + p.getKeys());
+							}
+							System.out.println("RightSibling NODE : " + y.getKeys());
+							System.out.println("LeftSibling NODE : " + z.getKeys());
+							
+							return true;
+						} else {
+							System.out.println("CASE 2(b) 'LeftSibling'");
+
+							List<K> zKeys = z.getKeys();
+							List<V> zValues = z.getValues();
+
+							List<K> pKeys = p.getKeys();
+							List<V> pValues = p.getValues();
+
+							shift = false;
+							int parentKeyIndex = nodeIndex - 1;
+							int zSize = z.getNumOfKeys();
+							
+							System.out.println("Merge");
+							merge(z, x, p, parentKeyIndex, shift, false);
+							// MERGE
+							K parentKey = p.getKeys().get(nodeIndex - 1);
+
+							zKeys.remove(zSize + keyIndex + 1);
+							zValues.remove(zSize + keyIndex + 1);
+							z.setKeys(zKeys);
+							z.setValues(zValues);
+							z.setNumOfKeys(zKeys.size());
+							System.out.println("NODE x : " + x.getKeys());
+							if (p != null) {
+								System.out.println("Parent NODE  : " + p.getKeys());
+							}
+							System.out.println("RightSibling NODE : " + y.getKeys());
+							System.out.println("LeftSibling NODE : " + z.getKeys());
+
+							if (p.getNumOfKeys() >= minDegree) {
+								pKeys.remove(parentKeyIndex);
+								pValues.remove(parentKeyIndex);
+								p.setKeys(pKeys);
+								p.setValues(pValues);
+								p.setNumOfKeys(pKeys.size());
+							} else {
+								
+								System.out.println("Fix");
+								// parent.getKeys().remove(parentKeyIndex);
+								// parent.getValues().remove(parentKeyIndex);
+								if (p.equals(this.root) && this.root.getKeys().size() == 1) {
+									System.out.println("Root Fix");
+									
+									this.root = z;
+								} else if (p.equals(this.root) && this.root.getKeys().size() > 1) {
+									System.out.println("Without Fix");
+									pKeys.remove(parentKeyIndex);
+									pValues.remove(parentKeyIndex);
+									p.setKeys(pKeys);
+									p.setValues(pValues);
+									p.setNumOfKeys(pKeys.size());
+								} else {
+									System.out.println("internalNodesFIX_UP");
+
+									internalNodesFIX_UP(parentKey, z);
+								}
+								
+							}	
+							
+							System.out.println("Finally");
+
+							
+							System.out.println("NODE x : " + x.getKeys());
+							if (p != null) {
+								System.out.println("Parent NODE  : " + p.getKeys());
+							}
+							System.out.println("Parent NODE  : " + p.getKeys());
+							System.out.println("RightSibling NODE : " + y.getKeys());
+							System.out.println("LeftSibling NODE : " + z.getKeys());
+							
 							return true;
 						}
-					}else { // CASE2(b) "Trick"
+					} else { // CASE2(b) "Trick"
+						System.out.println("CASE 2(b) 'LeftSibling'");
+
+						List<K> zKeys = z.getKeys();
+						List<V> zValues = z.getValues();
+
+						List<K> pKeys = p.getKeys();
+						List<V> pValues = p.getValues();
+
 						shift = false;
-						int parentKeyIndex = keyIndex - 1;
+						int parentKeyIndex = nodeIndex - 1;
+						int zSize = z.getNumOfKeys();
+						System.out.println("Merge");
 						merge(z, x, p, parentKeyIndex, shift, false);
-						K parentKey = parent.getKeys().get(keyIndex - 1);
-						K siblingKey = parent.getChildren().get(nodeIndex - 1).getKeys()
-								.get(parent.getChildren().get(nodeIndex - 1).getNumOfKeys() - 1);
-						
-						
-						z.getKeys().remove(keyIndex);
-						z.getValues().remove(keyIndex);
-						if (parent.getNumOfKeys() >= minDegree) {
-							parent.getKeys().remove(parentKeyIndex);
-							parent.getValues().remove(parentKeyIndex);
+						// MERGE
+						K parentKey = p.getKeys().get(nodeIndex - 1);
+
+						zKeys.remove(zSize + keyIndex + 1);
+						zValues.remove(zSize + keyIndex + 1);
+						z.setKeys(zKeys);
+						z.setValues(zValues);
+						z.setNumOfKeys(zKeys.size());
+						System.out.println("NODE x : " + x.getKeys());
+						System.out.println("Parent NODE  : " + p.getKeys());
+						System.out.println("RightSibling NODE : " + y.getKeys());
+						System.out.println("LeftSibling NODE : " + z.getKeys());
+
+						if (p.getNumOfKeys() >= minDegree) {
+							pKeys.remove(parentKeyIndex);
+							pValues.remove(parentKeyIndex);
+							p.setKeys(pKeys);
+							p.setValues(pValues);
+							p.setNumOfKeys(pKeys.size());
 						} else {
-							//parent.getKeys().remove(parentKeyIndex);
-							//parent.getValues().remove(parentKeyIndex);
-							internalNodesFIX_UP(parentKey);
-							//delete(parentKey);
-							//fix
+							
+							System.out.println("Fix");
+							// parent.getKeys().remove(parentKeyIndex);
+							// parent.getValues().remove(parentKeyIndex);
+							if (p.equals(this.root) && this.root.getKeys().size() == 1) {
+								System.out.println("Root Fix");
+								
+								this.root = z;
+							} else if (p.equals(this.root) && this.root.getKeys().size() > 1) {
+								System.out.println("Without Fix");
+								pKeys.remove(parentKeyIndex);
+								pValues.remove(parentKeyIndex);
+								p.setKeys(pKeys);
+								p.setValues(pValues);
+								p.setNumOfKeys(pKeys.size());
+							} else {
+								System.out.println("internalNodesFIX_UP");
+
+								internalNodesFIX_UP(parentKey, z);
+							}
 						}
 						
+						System.out.println("Finally");
+						
+						System.out.println("NODE x : " + x.getKeys());
+						if (p != null) {
+							System.out.println("Parent NODE  : " + p.getKeys());
+						}
+						System.out.println("RightSibling NODE : " + y.getKeys());
+						System.out.println("LeftSibling NODE : " + z.getKeys());
+						
+						return true;
 					}
-				} else if (y != null) {  //rightSiblingSecond
+				} else if (y.getNumOfKeys() > 0) { // rightSiblingSecond
 					if (y.getNumOfKeys() >= minDegree) { // CASE2(a) "Trivial"
-						K parentKey = parent.getKeys().get(keyIndex);
-						K siblingKey = parent.getChildren().get(nodeIndex + 1).getKeys().get(0);
+						System.out.println("CASE 2(a) 'RightSibling'");
 
-						y.getKeys().remove(0);
-						y.getValues().remove(0);
-						p.getKeys().remove(keyIndex);
-						p.getValues().remove(keyIndex);
-						p.getKeys().add(siblingKey);
-						p.getValues().add(parent.getChildren().get(nodeIndex + 1).getValues().get(0));
-						// Sort
-						x.getKeys().remove(keyIndex);
-						x.getValues().remove(keyIndex);
-						x.getKeys().add(parentKey);
-						x.getValues().add(parent.getValues().get(keyIndex));
-						// Sort
+						stealFromRightSibling(x, y, z, p, nodeIndex, keyIndex);
+						
+						List<K> xKeys = x.getKeys();
+						List<V> xValues = x.getValues();
+
+						xKeys.remove(keyIndex);
+						xValues.remove(keyIndex);
+						x.setKeys(xKeys);
+						x.setNumOfKeys(xKeys.size());
+						
+						System.out.println("Finally");
+
+						System.out.println("NODE x : " + x.getKeys());
+						if (p != null) {
+							System.out.println("Parent NODE  : " + p.getKeys());
+						}
+						System.out.println("RightSibling NODE : " + y.getKeys());
+						System.out.println("LeftSibling NODE : " + z.getKeys());
+						
 						return true;
 
 					} else { // CASE2(b) "Trick"
-						shift = true;
-						int parentKeyIndex = keyIndex ;
-						merge(y, x ,p ,parentKeyIndex, shift, false);
-						K parentKey = parent.getKeys().get(keyIndex);
-						K siblingKey = parent.getChildren().get(nodeIndex + 1).getKeys().get(0);
+						System.out.println("CASE 2(b) 'RightSibling'");
+						
+						List<K> xKeys = x.getKeys();
+						List<V> xValues = x.getValues();
 
-						y.getKeys().remove(keyIndex);
-						y.getValues().remove(keyIndex);
-						if (parent.getNumOfKeys() >= minDegree) {
-							parent.getKeys().remove(parentKeyIndex);
-							parent.getValues().remove(parentKeyIndex);
-						} else {
-							//parent.getKeys().remove(parentKeyIndex);
-							//parent.getValues().remove(parentKeyIndex);
-							internalNodesFIX_UP(parentKey);
-							//delete(parentKey);
-							//fix
+						List<K> pKeys = p.getKeys();
+						List<V> pValues = p.getValues();
+
+						shift = true;
+						int parentKeyIndex = nodeIndex;
+						System.out.println("parentKeyIndex : " + parentKeyIndex);
+						
+						System.out.println("Merge");
+						merge(x, y, p, parentKeyIndex, shift, false);
+						// MERGE
+						K parentKey = p.getKeys().get(nodeIndex);
+
+						xKeys.remove(keyIndex);
+						xValues.remove(keyIndex);
+						x.setKeys(xKeys);
+						x.setValues(xValues);
+						x.setNumOfKeys(xKeys.size());
+						
+						
+						
+						List <IBTreeNode<K, V>> xChildren = x.getChildren();
+						x.setChildren(xChildren);
+						
+						System.out.println("After Merge");
+						xChildren = x.getChildren();
+						x.setChildren(xChildren);
+						
+						System.out.println("Children");
+						for (int i = 0; i < xChildren.size(); i++) {
+							IBTreeNode<K, V> v = xChildren.get(i);
+							System.out.println(v.getKeys());
 						}
+						
+						
+						
+						
+						System.out.println("NODE x : " + x.getKeys());
+						if (p != null) {
+							System.out.println("Parent NODE  : " + p.getKeys());
+						}
+						System.out.println("RightSibling NODE : " + y.getKeys());
+						System.out.println("LeftSibling NODE : " + z.getKeys());
+						
+						
+						
+						
+
+						if (p.getNumOfKeys() >= minDegree) {
+							pKeys.remove(parentKeyIndex);
+							pValues.remove(parentKeyIndex);
+							p.setKeys(pKeys);
+							p.setValues(pValues);
+							p.setNumOfKeys(pKeys.size());
+						} else {
+							
+							System.out.println("Fix");
+							// parent.getKeys().remove(parentKeyIndex);
+							// parent.getValues().remove(parentKeyIndex);
+							if (p.equals(this.root) && this.root.getKeys().size() == 1) {
+								System.out.println("Root Fix");
+								
+								this.root = x;
+								
+							} else if (p.equals(this.root) && this.root.getKeys().size() > 1) {
+								System.out.println("Without Fix");
+								pKeys.remove(parentKeyIndex);
+								pValues.remove(parentKeyIndex);
+								p.setKeys(pKeys);
+								p.setValues(pValues);
+								p.setNumOfKeys(pKeys.size());
+							} else {
+								System.out.println("internalNodesFIX_UP");
+
+								internalNodesFIX_UP(parentKey, y);
+							}
+							// delete(parentKey);
+							// fix
+							
+							
+							
+						}
+						
+						System.out.println("Finally");
+
+						System.out.println("NODE x : " + x.getKeys());
+						if (p != null) {
+							System.out.println("Parent NODE  : " + p.getKeys());
+						}						
+						System.out.println("RightSibling NODE : " + y.getKeys());
+						System.out.println("LeftSibling NODE : " + z.getKeys());
+						
+
+						return true;
 					}
 				}
 			}
 		} else {
+			
 			IBTreeNode<K, V> predecessor = new BTreeNode<>();
 			predecessor = getPredecesor(x, keyIndex);
 			IBTreeNode<K, V> successor = new BTreeNode<>();
-			successor = getSuccessor(x, 0);
+			successor = getSuccessor(x, keyIndex + 1);
+			
 			if (predecessor.getNumOfKeys() >= minDegree) { // CASE3(a) "Trivial"
-				K predecessorKey = predecessor.getKeys().get(keyIndex);
-				V predecessorValue = predecessor.getValues().get(keyIndex);
+				System.out.println("CASE3(a) 'Predecessor'");
+				
+				K predecessorKey = predecessor.getKeys().get(predecessor.getKeys().size() - 1);
+				V predecessorValue = predecessor.getValues().get(predecessor.getKeys().size() - 1);
+				
+				List<K> xKeys = x.getKeys();
+				List<V> xValues = x.getValues();
+				
+				List<K> predecessorKeys = predecessor.getKeys();
+				List<V> predecessorValues = predecessor.getValues();
+				
+				predecessorKeys.remove(predecessor.getKeys().size() - 1);
+				predecessorValues.remove(predecessor.getKeys().size() - 1);
+				
+				predecessor.setKeys(predecessorKeys);
+				predecessor.setValues(predecessorValues);
+				predecessor.setNumOfKeys(predecessorKeys.size());
+				
+				xKeys.set(keyIndex, predecessorKey);
+				xValues.set(keyIndex, predecessorValue);
+				x.setKeys(xKeys);
+				x.setValues(xValues);
+				
+				System.out.println("NODE x : " + x.getKeys());
+				if (p != null) {
+					System.out.println("Parent NODE  : " + p.getKeys());
+				}
+				System.out.println("RightSibling NODE : " + y.getKeys());
+				System.out.println("LeftSibling NODE : " + z.getKeys());
+				System.out.println("Predecessor NODE : " + predecessor.getKeys());
 
-				predecessor.getKeys().remove(keyIndex);
-				predecessor.getValues().remove(keyIndex);
-				x.getKeys().add(predecessorKey);
-				x.getValues().add(predecessorValue);
+				
 				return true;
 
 			} else {
 				if (successor.getNumOfKeys() >= minDegree) { // CASE3(b) "Trivial"
+					System.out.println("CASE3(b) 'Successor'");
+					
 					K successorKey = successor.getKeys().get(0);
 					V successorrValue = successor.getValues().get(0);
+					
+					this.successoorKey = successorKey;
+					
+					List<K> xKeys = x.getKeys();
+					List<V> xValues = x.getValues();
+					
+					List<K> successorKeys = successor.getKeys();
+					List<V> successorValues = successor.getValues();
+					
+					successorKeys.remove(0);
+					successorValues.remove(0);
+					
+					successor.setKeys(successorKeys);
+					successor.setValues(successorValues);
+					successor.setNumOfKeys(successorKeys.size());
+					
+					xKeys.set(keyIndex, successorKey);
+					xValues.set(keyIndex, successorrValue);
+					x.setKeys(xKeys);
+					x.setValues(xValues);
+					
+					System.out.println("NODE x : " + x.getKeys());
+					if (p != null) {
+						System.out.println("Parent NODE  : " + p.getKeys());
+					}
+					System.out.println("RightSibling NODE : " + y.getKeys());
+					System.out.println("LeftSibling NODE : " + z.getKeys());
+					System.out.println("Successor NODE : " + successor.getKeys());
 
-					successor.getKeys().remove(0);
-					successor.getValues().remove(0);
-					x.getKeys().add(successorKey);
-					x.getValues().add(successorrValue);
 					return true;
 
 				} else { // CASE3(c) "Trick"
-					//merge(predecessor, successor);
-
-					predecessor.getKeys().add(x.getKeys().get(keyIndex));
-					predecessor.getValues().add(x.getValues().get(keyIndex));
-					// Sort
-					/*int newIndex = predecessor.getKeys().indexOf(x.getKeys().get(keyIndex));
-					predecessor.getKeys().remove(newIndex);
-					predecessor.getValues().remove(newIndex);
-					delete(key);*/
+					System.out.println("CASE3(c)");
 					
-					/*K predecessorKey = predecessor.getKeys().get(predecessor.getKeys().size() - 1);
-					V predecessorValue = predecessor.getValues().get(predecessor.getValues().size() - 1);
-					node.getKeys().set(i, predecessorKey);
-					node.getValues().set(i, predecessorValue);
-					deleteRecursively(predecessor, predecessorKey);*/
-					 	
+					IBTreeNode<K, V> left = new BTreeNode<>();
+					IBTreeNode<K, V> right = new BTreeNode<>();
+					if (x.getChildren().size() > 0) {
+						left = x.getChildren().get(0);
+					} 
+					if (x.getChildren().size() >= 2) {
+						right = x.getChildren().get(1);
+					}
+					
+					System.out.println("Left Child : " + left.getKeys());
+					System.out.println("Right Child : " + right.getKeys());
+					
+					if (x.equals(this.root) && this.root.getKeys().size() == 1) { /////////////////////////////////////
+						System.out.println("Root Fix");
+						System.out.println("Left Child : " + left.getKeys());
+						System.out.println("Right Child : " + right.getKeys());
+						root_FIX(x, left, right);
+						
+						return true;
+					}
+
+
+					
+					List<K> xKeys = x.getKeys();
+					List<V> xValues = x.getValues();
+					
+					List<K> predecessorKeys = predecessor.getKeys();
+					List<V> predecessorValues = predecessor.getValues();
+					
+					K predecessorKey = predecessor.getKeys().get(predecessorKeys.size() - 1);
+					V predecessorValue = predecessor.getValues().get(predecessorKeys.size() - 1);
+					
+					K successorKey = successor.getKeys().get(0);
+					V successorrValue = successor.getValues().get(0);
+					
+					this.successoorKey = successorKey;
+					
+					int prdecessorSize = predecessor.getNumOfKeys();
+					
+					System.out.println("Successor NODE : " + successor.getKeys());
+					System.out.println("Predecessor NODE : " + predecessor.getKeys());
+					
+					System.out.println("Before Merge");
+					List <IBTreeNode<K, V>> xChildren = x.getChildren();
+					x.setChildren(xChildren);
+					
+					System.out.println("Children");
+					for (int i = 0; i < xChildren.size(); i++) {
+						IBTreeNode<K, V> v = xChildren.get(i);
+						System.out.println(v.getKeys());
+					}
+					
+					
+					System.out.println("predecessorKey : " + predecessorKey);
+					IBTreeNode<K, V> y1 = new BTreeNode<>();
+					if ((y1 = find((K) predecessorKey)) == null) {
+						throw new RuntimeErrorException(null);
+					}
+					p = this.parent; // PARENT
+					this.parent = null;
+					int keyIndex1 = 0;
+					int nodeIndex1 = 0;
+					List<K> temp1 = y1.getKeys();
+					for (int i = 0; i < temp1.size(); i++) {
+						if (temp1.get(i).equals(predecessorKey)) {
+							keyIndex1 = i;
+						}
+					}
+					
+					if (p != null) {
+						List<IBTreeNode<K, V>> pChildren = p.getChildren();
+						for (int i = 0; i < p.getChildren().size(); i++) {
+							if (p.getChildren().get(i).equals(y1)) {
+								nodeIndex1 = i;
+								break;
+							}
+						}
+					}
+					
+					merge(predecessor, successor, x, keyIndex, false, true);
+					
+					System.out.println("After Merge");
+					xChildren = x.getChildren();
+					x.setChildren(xChildren);
+					
+					System.out.println("Children");
+					for (int i = 0; i < xChildren.size(); i++) {
+						IBTreeNode<K, V> v = xChildren.get(i);
+						System.out.println(v.getKeys());
+					}
+					
+					System.out.println("prdecessorSize : " + prdecessorSize);
+					predecessorKeys.remove(prdecessorSize);
+					predecessorValues.remove(prdecessorSize);
+					predecessor.setKeys(predecessorKeys);
+					predecessor.setValues(predecessorValues);
+					
+					
+					
+					System.out.println("NodeIndex1 'predecessorNodeInde' : " + nodeIndex1);
+					p.getChildren().get(nodeIndex1).setKeys(predecessorKeys);
+					p.getChildren().get(nodeIndex1).setValues(predecessorValues);
+					p.getChildren().get(nodeIndex1).setNumOfKeys(predecessorKeys.size());
+
+					
+					
+					
+					
+					System.out.println("NODE x : " + x.getKeys());
+					if (p != null) {
+						System.out.println("Parent NODE  : " + p.getKeys());
+					}
+					System.out.println("RightSibling NODE : " + y.getKeys());
+					System.out.println("LeftSibling NODE : " + z.getKeys());
+					System.out.println("Predecessor NODE : " + predecessor.getKeys());
+					
+					if (x.getNumOfKeys() >= minDegree) {
+						System.out.println("Without Fix");
+						xKeys.remove(keyIndex);
+						xValues.remove(keyIndex);
+						x.setKeys(xKeys);
+						x.setValues(xValues);
+						x.setNumOfKeys(xKeys.size());
+					} else {
+						System.out.println("Fix");
+						// parent.getKeys().remove(parentKeyIndex);
+						// parent.getValues().remove(parentKeyIndex);
+						if (x.equals(this.root) && this.root.getKeys().size() == 1) { /////////////////////////////////////
+							System.out.println("Root Fix");
+							System.out.println("Left Child : " + left.getKeys());
+							System.out.println("Right Child : " + right.getKeys());
+							root_FIX(x, left, right);
+						} else if (x.equals(this.root) && this.root.getKeys().size() > 1) {
+							System.out.println("Without Fix");
+							xKeys.remove(keyIndex);
+							xValues.remove(keyIndex);
+							x.setKeys(xKeys);
+							x.setValues(xValues);
+							x.setNumOfKeys(xKeys.size());
+						} else {
+							System.out.println("internalNodesFIX_UP");
+
+							internalNodesFIX_UP(key, predecessor);
+						}
+						// delete(parentKey);
+						// fix
+					}
+					
+					System.out.println("Finally");
+
+					
+					System.out.println("NODE x : " + x.getKeys());
+					if (p != null) {
+						System.out.println("Parent NODE  : " + p.getKeys());
+					}
+					System.out.println("RightSibling NODE : " + y.getKeys());
+					System.out.println("LeftSibling NODE : " + z.getKeys());
+					
+					System.out.println("Children");
+					List<IBTreeNode<K, V>> newChildren = x.getChildren();					
+					for (int i = 0; i < newChildren.size(); i++) {
+						IBTreeNode<K, V> g= newChildren.get(i);
+						System.out.println(g.getKeys());
+
+					}
+					
+					return true;
 				}
 			}
 		}
 		return false;
 	}
 
-	void merge(IBTreeNode<K, V> x, IBTreeNode<K, V> y, IBTreeNode<K, V> parent, int indexOfKeyInParent, boolean shift, boolean fix) {
+	void merge(IBTreeNode<K, V> x, IBTreeNode<K, V> y, IBTreeNode<K, V> parent, int indexOfKeyInParent, boolean shift,
+			boolean fix) {
 		List<K> xKeys = x.getKeys();
-		List<K> yKeys = y.getKeys();
 		List<V> xValues = x.getValues();
+		List<K> yKeys = y.getKeys();
 		List<V> yValues = y.getValues();
 		
+		List<IBTreeNode<K, V>> parentChildren = parent.getChildren();
+
+
 		List<K> newKeys = xKeys;
 		List<V> newValues = xValues;
-		
-		if (!fix) {
+
+		//if (!fix) {
 			newKeys.add(parent.getKeys().get(indexOfKeyInParent));
 			newValues.add(parent.getValues().get(indexOfKeyInParent));
-		}
-		
-		for (int i = 0; i < yKeys.size(); i++) {
+		//}
+			
+		newKeys.addAll(yKeys);
+		newValues.addAll(yValues);
+
+		/*for (int i = 0; i < yKeys.size(); i++) {
 			newKeys.add(yKeys.get(i));
 		}
 		for (int i = 0; i < yValues.size(); i++) {
 			newValues.add(yValues.get(i));
-		}
+		}*/
+		
 		x.setKeys(newKeys);
 		x.setValues(newValues);
-		
-		if (shift) {
-			parent.getChildren().remove(indexOfKeyInParent);
+		x.setNumOfKeys(newKeys.size());
+
+		if (!fix) {
+			if (shift) {
+				System.out.println("index'removed'");
+
+				parentChildren.remove(indexOfKeyInParent + 1);
+				parent.setChildren(parentChildren);
+			} else {
+				System.out.println("index + 1 'removed'");
+
+				parentChildren.remove(indexOfKeyInParent + 1);
+				parent.setChildren(parentChildren);
+			}
 		} else {
-			parent.getChildren().remove(indexOfKeyInParent + 1);
+			
+			IBTreeNode<K, V> p1 = new BTreeNode<>();
+			
+			
+			System.out.println("successoorKey : " + successoorKey);
+			if ((y = find((K) successoorKey)) == null) {
+				throw new RuntimeErrorException(null);
+			}
+			p1 = this.parent; // PARENT
+			
+			int keyIndex = 0;
+			int nodeIndex = 0;
+			List<K> temp = y.getKeys();
+			for (int i = 0; i < temp.size(); i++) {
+				if (temp.get(i).equals(successoorKey)) {
+					keyIndex = i;
+				}
+			}
+			
+			if (p1 != null) {
+				List<IBTreeNode<K, V>> pChildren = p1.getChildren();
+				for (int i = 0; i < p1.getChildren().size(); i++) {
+					if (p1.getChildren().get(i).equals(y)) {
+						nodeIndex = i;
+						break;
+					}
+				}
+			}
+			
+			List<IBTreeNode<K, V>> pChildren1 = p1.getChildren();
+			
+			System.out.println("nodeIndex : " + nodeIndex);
+			System.out.println("p.keys : " + p1.getKeys());
+			pChildren1.remove(nodeIndex);
+			p1.setChildren(pChildren1);
+			
+			this.parent = null;
+			this.successoorKey = null;
+			
 		}
 	}
-	
-	void internalNodesFIX_UP(K key) {
+
+	void internalNodesFIX_UP(K key, IBTreeNode<K, V> node) {
 		IBTreeNode<K, V> x = new BTreeNode<>();
 		IBTreeNode<K, V> p = new BTreeNode<>();
 		IBTreeNode<K, V> y = new BTreeNode<>();
 		IBTreeNode<K, V> z = new BTreeNode<>();
+		
 
-		if ((x = find(key)) == null) {
-			//throw;
+		if ((x = find((K) key)) == null) {
+			// throw;
 		}
 		p = this.parent; // PARENT
 		this.parent = null;
@@ -581,59 +1125,436 @@ public class BTree<K extends Comparable<K>, V> implements IBTree<K, V> {
 		int nodeIndex = 0;
 		List<K> temp = x.getKeys();
 		for (int i = 0; i < temp.size(); i++) {
-			if (temp.get(i) == key) {
+			if (temp.get(i).equals(key)) {
 				keyIndex = i;
 			}
 		}
-		for (int i = 0; i < p.getChildren().size(); i++) {
-			if (p.getChildren().get(i) == x) {
-				nodeIndex = i;
+		
+		List<K> xKeys = x.getKeys();
+		List<V> xValues = x.getValues();
+
+		if (p != null) {
+			for (int i = 0; i < p.getChildren().size(); i++) {
+				if (p.getChildren().get(i).equals(x)) {
+					nodeIndex = i;
+				}
 			}
+
+			if (nodeIndex == 0) {
+				y = p.getChildren().get(nodeIndex + 1); // Right_Sibling
+			} else if (nodeIndex == p.getChildren().size() - 1) {
+				z = p.getChildren().get(nodeIndex - 1); // Left_Sibling
+			} else {
+				y = p.getChildren().get(nodeIndex + 1); // Right_Sibling
+				z = p.getChildren().get(nodeIndex - 1); // Left_Sibling
+			}
+
+			xKeys.remove(keyIndex);
+			xValues.remove(keyIndex);
+			x.setKeys(xKeys);
+			x.setValues(xValues);
+			x.setNumOfKeys(xKeys.size());
+			
+			System.out.println("keyIndex : " + keyIndex);
+			System.out.println("Key : " + key);
+			System.out.println("NODE x : " + x.getKeys());
+			List <IBTreeNode<K, V>> xChildren5 = x.getChildren();
+			System.out.println("Children");
+			for (int i = 0; i < xChildren5.size(); i++) {
+				IBTreeNode<K, V> v = xChildren5.get(i);
+				System.out.println(v.getKeys());
+			}
+			System.out.println("Parent NODE  : " + p.getKeys());
+			System.out.println("RightSibling NODE : " + y.getKeys());
+			System.out.println("LeftSibling NODE : " + z.getKeys());
+			
+			
+			
+			if (z.getNumOfKeys() >= minDegree) { // StealFromLeftSibling'First'
+				System.out.println(" StealFromLeftSibling");
+				
+				List <IBTreeNode<K, V>> zChildren = z.getChildren();
+				IBTreeNode<K, V> shiftedSibling = zChildren.get(z.getNumOfKeys());
+				System.out.println("shiftedSibling" + shiftedSibling.getKeys());
+				
+				zChildren.remove(z.getNumOfKeys());
+				z.setChildren(zChildren);
+				
+				
+				stealFromLeftSibling(x, y, z, p, nodeIndex, keyIndex);
+				
+				
+				
+				List <IBTreeNode<K, V>> xChildren = x.getChildren();
+				xChildren.add(0, shiftedSibling);
+				x.setChildren(xChildren);
+				x.setNumOfKeys(x.getNumOfKeys() + 1);
+				
+				System.out.println("Children");
+				for (int i = 0; i < xChildren.size(); i++) {
+					IBTreeNode<K, V> v = xChildren.get(i);
+					System.out.println(v.getKeys());
+				}
+				
+				
+				
+
+			} else if (y.getNumOfKeys() >= minDegree) { // StealFromRightSibling'Second'
+				System.out.println(" StealFromRightSibling");
+				
+				List <IBTreeNode<K, V>> yChildren = y.getChildren();
+				IBTreeNode<K, V> shiftedSibling = yChildren.get(0);
+				System.out.println("shiftedSibling" + shiftedSibling.getKeys());
+				
+				yChildren.remove(0);
+				y.setChildren(yChildren);
+
+				stealFromRightSibling(x, y, z, p, nodeIndex, keyIndex);
+				
+				List <IBTreeNode<K, V>> xChildren = x.getChildren();
+				xChildren.set(x.getNumOfKeys(), shiftedSibling);
+				x.setChildren(xChildren);
+				x.setNumOfKeys(x.getNumOfKeys() + 1);
+
+
+			} else { // Merge
+				System.out.println("Merge");
+				
+				if (z.getNumOfKeys() > 0) {
+					System.out.println("LeftSibling");
+
+					List<K> pKeys = p.getKeys();
+					List<V> pValues = p.getValues();
+					int parentIndex = nodeIndex - 1;
+					
+					K parentKey = p.getKeys().get(nodeIndex - 1);
+					merge(z, x, p, parentIndex, false, false);	
+					
+					List<IBTreeNode<K, V>> leftChildren = z.getChildren();
+					List<IBTreeNode<K, V>> rightChildren = x.getChildren();
+
+					List<IBTreeNode<K, V>> newChildren = leftChildren;
+					
+					for (int i = 0; i < rightChildren.size(); i++) {
+						newChildren.add(rightChildren.get(i));
+					}
+					
+					z.setChildren(newChildren);
+					
+					System.out.println("NODE x : " + x.getKeys());
+					System.out.println("Parent NODE  : " + p.getKeys());
+					System.out.println("RightSibling NODE : " + y.getKeys());
+					System.out.println("LeftSibling NODE : " + z.getKeys());
+
+					
+					if (p.getNumOfKeys() >= minDegree) {
+						pKeys.remove(parentIndex);
+						pValues.remove(parentIndex);
+						p.setKeys(pKeys);
+						p.setValues(pValues);
+						p.setNumOfKeys(pKeys.size());
+					} else {
+						System.out.println("Fix");
+						internalNodesFIX_UP(parentKey, z);
+					}
+					
+				} else if (y.getNumOfKeys() > 0) {
+					System.out.println("RightSibling");
+					
+					List<K> pKeys = p.getKeys();
+					List<V> pValues = p.getValues();
+					int parentIndex = nodeIndex;
+
+					K parentKey = p.getKeys().get(parentIndex);
+					merge(x, y, p, parentIndex, true, false);
+					
+					List<IBTreeNode<K, V>> leftChildren = x.getChildren();
+					List<IBTreeNode<K, V>> rightChildren = y.getChildren();
+
+					List<IBTreeNode<K, V>> newChildren = leftChildren;
+					
+					for (int i = 0; i < rightChildren.size(); i++) {
+						newChildren.add(rightChildren.get(i));
+					}
+					
+					x.setChildren(newChildren);
+					
+					System.out.println("NODE x : " + x.getKeys());
+					System.out.println("Parent NODE  : " + p.getKeys());
+					System.out.println("RightSibling NODE : " + y.getKeys());
+					System.out.println("LeftSibling NODE : " + z.getKeys());
+					
+					if (p.getNumOfKeys() >= minDegree) {
+						pKeys.remove(parentIndex);
+						pValues.remove(parentIndex);
+						p.setKeys(pKeys);
+						p.setValues(pValues);
+						p.setNumOfKeys(pKeys.size());
+					} else {
+						if (p.getNumOfKeys() == 1) {
+							System.out.println("NO Parent");
+							this.root = x;
+							System.out.println("Root : " + this.root.getKeys());
+							List <IBTreeNode<K, V>> xChildren = x.getChildren();
+							System.out.println("Children");
+							for (int i = 0; i < xChildren.size(); i++) {
+								IBTreeNode<K, V> v = xChildren.get(i);
+								System.out.println(v.getKeys());
+							}
+
+						} else {
+							System.out.println("Fix");
+							internalNodesFIX_UP(parentKey, y);
+						}
+						
+					}
+				}				
+			}
+		} else {  //ReachToTheRoot
+			System.out.println("NO Parent");
+			List<K> xKeys1 = x.getKeys();
+			List<V> xValues1 = x.getValues();
+
+			xKeys1.remove(keyIndex);
+			xValues1.remove(keyIndex);
+			x.setKeys(xKeys1);
+			x.setValues(xValues1);
+			x.setNumOfKeys(xKeys1.size());
+			
+			if (x.getNumOfKeys() > 0) {
+				System.out.println("Root Can have 1 Key at Least");
+			} else {
+				this.root = node;
+				System.out.println("Root : " + this.root.getKeys());
+				
+				List <IBTreeNode<K, V>> xChildren = node.getChildren();
+				
+				System.out.println("Children");
+				for (int i = 0; i < xChildren.size(); i++) {
+					IBTreeNode<K, V> v = xChildren.get(i);
+					System.out.println(v.getKeys());
+				}
+				
+			}
+
 		}
-		if (nodeIndex == 0) {
-			y = p.getChildren().get(nodeIndex + 1); // Right_Sibling
-		} else if (nodeIndex == p.getChildren().size() - 1) {
-			z = p.getChildren().get(nodeIndex - 1); // Left_Sibling
-		} else {
-			y = p.getChildren().get(nodeIndex + 1); // Right_Sibling
-			z = p.getChildren().get(nodeIndex - 1); // Left_Sibling
+	}
+	
+	private void root_FIX (IBTreeNode<K, V> x, IBTreeNode<K, V> left, IBTreeNode<K, V> right) {
+		
+		System.out.println("ROOT FIX");
+		System.out.println("Merge Left & Right");
+		
+		System.out.println("Left.keys : " + left.getKeys());
+		
+		List<K> leftKeys = left.getKeys();
+		List<V> leftValues = left.getValues();
+		List<IBTreeNode<K, V>> leftChildren = left.getChildren();
+		
+		System.out.println("leftKeys : " + leftKeys);
+
+		List<K> rightKeys = right.getKeys();
+		List<V> rightValues = right.getValues();
+		List<IBTreeNode<K, V>> rightChildren = right.getChildren();
+
+		List<K> newKeys = leftKeys;
+		List<V> newValues = leftValues;
+		List<IBTreeNode<K, V>> newChildren = leftChildren;
+		
+		System.out.println("newKeys : " + newKeys);
+
+		newKeys.addAll(rightKeys);
+		newValues.addAll(rightValues);
+		newChildren.addAll(rightChildren);
+		
+		System.out.println("newKeys : " + newKeys);
+
+		/*for (int i = 0; i < rightKeys.size(); i++) {
+			newKeys.add(rightKeys.get(i));
+		}
+		for (int i = 0; i < rightValues.size(); i++) {
+			newValues.add(rightValues.get(i));
+		}
+		for (int i = 0; i < rightChildren.size(); i++) {
+			newChildren.add(rightChildren.get(i));
+		}*/
+		/*x.setKeys(newKeys);
+		x.setValues(newValues);
+		x.setChildren(newChildren);
+		x.setNumOfKeys(newKeys.size());*/
+		
+		IBTreeNode<K, V> root = new BTreeNode<>();
+		root.setKeys(newKeys);
+		root.setValues(newValues);
+		root.setChildren(newChildren);
+		root.setNumOfKeys(newKeys.size());
+		root.setLeaf(false);
+		
+		this.root = root;
+		System.out.println("Root : " + root.getKeys());
+		System.out.println("Root : " + this.root.getKeys());
+		for (int i = 0; i <root.getChildren().size(); i++) {
+			IBTreeNode<K, V> g= newChildren.get(i);
+			System.out.println(g.getKeys());
+
 		}
 		
-		int parentIndex = keyIndex - 1;
-		x.getKeys().remove(keyIndex);
-		x.getValues().remove(keyIndex);
 		
-		if (x.getNumOfKeys() == minDegree - 1) {
-			if (z != null) {
-				K parentKey = parent.getKeys().get(keyIndex - 1);
-				V parentValue = parent.getValues().get(keyIndex - 1);
-				//x.getKeys().add(0, parentKey);
-				//x.getValues().add(0, parentValue);
-				merge(z, parent, parent, parentIndex, false, true);
-				internalNodesFIX_UP(parentKey);
-			} else if (y != null) {
-				K parentKey = parent.getKeys().get(keyIndex);
-				V parentValue = parent.getValues().get(keyIndex);
-				//x.getKeys().add(0, parentKey);
-				//x.getValues().add(0, parentValue);
-				merge(parent, z, parent, parentIndex, true, true);
-				internalNodesFIX_UP(parentKey);
-			}
-		}
+	}
+
+	private void stealFromLeftSibling(IBTreeNode<K, V> x, IBTreeNode<K, V> y, IBTreeNode<K, V> z, IBTreeNode<K, V> p,
+			int nodeIndex, int keyIndex) {
+		
+		System.out.println("stealFromLeftSibling");
+		
+		List<K> xKeys = x.getKeys();
+		List<V> xValues = x.getValues();
+
+		List<K> zKeys = z.getKeys();
+		List<V> zValues = z.getValues();
+
+		List<K> pKeys = p.getKeys();
+		List<V> pValues = p.getValues();
+
+		K parentKey = p.getKeys().get(nodeIndex - 1);
+		V parentValue = p.getValues().get(nodeIndex - 1);
+
+		K siblingKey = p.getChildren().get(nodeIndex - 1).getKeys()
+				.get(p.getChildren().get(nodeIndex - 1).getNumOfKeys() - 1);
+		V siblingValue = p.getChildren().get(nodeIndex - 1).getValues()
+				.get(p.getChildren().get(nodeIndex - 1).getNumOfKeys() - 1);
+
+		zKeys.remove(z.getNumOfKeys() - 1);
+		zValues.remove(z.getNumOfKeys() - 1);
+		z.setKeys(zKeys);
+		z.setValues(zValues);
+		z.setNumOfKeys(zKeys.size());
+
+		pKeys.set(nodeIndex - 1, siblingKey);
+		pValues.set(nodeIndex - 1, siblingValue);
+		p.setKeys(pKeys);
+		p.setValues(pValues);
+		// Sort
+		
+		xKeys.add(0, parentKey);
+		xValues.add(0, parentValue);
+		x.setKeys(xKeys);
+		x.setValues(xValues);
+		// Sort
+		System.out.println("NODE x : " + x.getKeys());
+		System.out.println("Parent NODE  : " + p.getKeys());
+		System.out.println("RightSibling NODE : " + y.getKeys());
+		System.out.println("LeftSibling NODE : " + z.getKeys());
+	}
+
+	private void stealFromRightSibling(IBTreeNode<K, V> x, IBTreeNode<K, V> y, IBTreeNode<K, V> z, IBTreeNode<K, V> p,
+			int nodeIndex, int keyIndex) {
+		
+		System.out.println("stealFromRightSibling");
+		
+		List<K> xKeys = x.getKeys();
+		List<V> xValues = x.getValues();
+
+		List<K> yKeys = y.getKeys();
+		List<V> yValues = y.getValues();
+
+		List<K> pKeys = p.getKeys();
+		List<V> pValues = p.getValues();
+
+		K parentKey = p.getKeys().get(nodeIndex);
+		V parentValue = p.getValues().get(nodeIndex);
+
+		K siblingKey = p.getChildren().get(nodeIndex + 1).getKeys().get(0);
+		V siblingValue = p.getChildren().get(nodeIndex + 1).getValues().get(0);
+
+		yKeys.remove(0);
+		yValues.remove(0);
+		y.setKeys(yKeys);
+		y.setValues(yValues);
+		y.setNumOfKeys(yKeys.size());
+
+		pKeys.set(nodeIndex, siblingKey);
+		pValues.set(nodeIndex, siblingValue);
+		p.setKeys(pKeys);
+		p.setValues(pValues);
+		// Sort
+
+		/*xKeys.remove(keyIndex);
+		xValues.remove(keyIndex);*/
+		
+		xKeys.add(parentKey);
+		xValues.add(parentValue);
+		x.setKeys(xKeys);
+		x.setValues(xValues);
+		// Sort
+		System.out.println("NODE x : " + x.getKeys());
+		System.out.println("Parent NODE  : " + p.getKeys());
+		System.out.println("RightSibling NODE : " + y.getKeys());
+		System.out.println("LeftSibling NODE : " + z.getKeys());
 	}
 
 	private IBTreeNode<K, V> getPredecesor(IBTreeNode<K, V> x, int keyIndex) {
 		IBTreeNode<K, V> z = x.getChildren().get(keyIndex);
+		System.out.println("z :" + z.getKeys());
+		
+		List<IBTreeNode<K, V>> zChildren = z.getChildren();
+		int size = z.getChildren().size();
+		int limit = z.getNumOfKeys() + 1;
+		
+		if (z.getChildren().size() > limit) {
+			for (int i = limit; i <= z.getChildren().size() + 1; i++) {
+				zChildren.remove(zChildren.size() - 1);
+			}
+		}
+		z.setChildren(zChildren);
+		
 		while (!z.isLeaf()) {
 			z = z.getChildren().get(z.getChildren().size() - 1);
+			
+			List<IBTreeNode<K, V>> z2Children = z.getChildren();
+			int size2 = z.getChildren().size();
+			int limit2 = z.getNumOfKeys() + 1;
+			
+			if (z.getChildren().size() > limit2) {
+				for (int i = limit; i <= z.getChildren().size() + 1; i++) {
+					z2Children.remove(z2Children.size() - 1);
+				}
+			}
+			z.setChildren(z2Children);
+			
+			System.out.println("z :" + z.getKeys());
 		}
 		return z;
 	}
 
 	private IBTreeNode<K, V> getSuccessor(IBTreeNode<K, V> x, int keyIndex) {
 		IBTreeNode<K, V> z = x.getChildren().get(keyIndex);
+		
+		List<IBTreeNode<K, V>> zChildren = z.getChildren();
+		int size = z.getChildren().size();
+		int limit = z.getNumOfKeys() + 1;
+		
+		if (z.getChildren().size() > limit) {
+			for (int i = limit; i <= z.getChildren().size() + 1; i++) {
+				zChildren.remove(zChildren.size() - 1);
+			}
+		}
+		z.setChildren(zChildren);
+		
 		while (!z.isLeaf()) {
 			z = z.getChildren().get(0);
+			
+			List<IBTreeNode<K, V>> z2Children = z.getChildren();
+			int size2 = z.getChildren().size();
+			int limit2 = z.getNumOfKeys() + 1;
+			
+			if (z.getChildren().size() > limit2) {
+				for (int i = limit; i <= z.getChildren().size() + 1; i++) {
+					z2Children.remove(z2Children.size() - 1);
+				}
+			}
+			z.setChildren(z2Children);
+			
 		}
 		return z;
 	}

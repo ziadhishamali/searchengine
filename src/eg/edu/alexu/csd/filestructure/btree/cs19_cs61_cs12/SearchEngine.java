@@ -255,7 +255,6 @@ public class SearchEngine implements ISearchEngine {
                 String firstId = searchResultLists.get(i).get(j).getId();
                 int firstRank = searchResultLists.get(i).get(j).getRank();
 
-
                 for (int t = 0; t < searchResultLists.get(i+1).size(); t++) { // SecondWord
 
                     String secondId = searchResultLists.get(i+1).get(t).getId();
