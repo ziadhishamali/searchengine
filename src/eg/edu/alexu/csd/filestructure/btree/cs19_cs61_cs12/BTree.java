@@ -39,7 +39,7 @@ public class BTree<K extends Comparable<K>, V> implements IBTree<K, V> {
 	@Override
 	public void insert(K key, V value) {
 		
-		System.out.println("Inserting key: " + key + " , value: " + value);
+		//System.out.println("Inserting key: " + key + " , value: " + value);
 		// checks for null key or value
 		if (key == null || value == null) {
 			throw new RuntimeErrorException(null);

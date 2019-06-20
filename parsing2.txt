@@ -1,0 +1,40 @@
+
+the id of doc: 2
+word is: hello
+word is: world
+word is: hello
+word is: world
+word is: hello
+word is: fucking
+word is: world
+word is: hello
+word is: fucking
+word is: shitty
+word is: world
+
+the id of doc: 3
+word is: hello
+word is: world
+
+the id of doc: 4
+word is: hoo
+word is: lee
+word is: shit
+
+the id of doc: 5
+word is: hoo
+word is: lee
+word is: shit
+word is: hoo
+word is: lee
+word is: shit
+
+the id of doc: 6
+word is: fucking
+word is: 4rmt
+word is: fucking
+word is: 4rmt
+
+the id of doc: 7
+word is: hello
+word is: world

@@ -4,6 +4,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.management.RuntimeErrorException;
@@ -21,7 +22,7 @@ import eg.edu.alexu.csd.filestructure.btree.ISearchResult;
 
 public class SearchEngine implements ISearchEngine {
 	
-	private IBTree<String, ISearchResult> tree;
+	private IBTree<String, List<ISearchResult>> tree;
 	
 	public SearchEngine(int minDegree) {
 		tree = new BTree<>(minDegree);
@@ -29,7 +30,56 @@ public class SearchEngine implements ISearchEngine {
 
 	@Override
 	public void indexWebPage(String filePath) {
-		String[][] all = this.parseFile(filePath);
+		try {
+			String[][] all = this.parseFile(filePath);
+			
+			File fout = new File("parsing2.txt");
+			FileOutputStream fos = new FileOutputStream(fout);
+			BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
+			
+			for (int i = 0; i < all.length; i++) {
+				bw.newLine();
+				bw.write("the id of doc: " + all[i][0]);
+				bw.newLine();
+				String content = all[i][3];
+				String[] words = content.split("\\s+");
+				for (int j = 0; j < words.length; j++) {
+					String finalWord = words[j].trim().toLowerCase();
+					if (!finalWord.equals("")) { // checks for empty word or spaces
+						bw.write("word is: " + finalWord);
+						bw.newLine();
+						List<ISearchResult> res;
+						try {
+							res = tree.search(finalWord);
+							if (res == null) { // the word isn't found in the tree
+								res = new ArrayList<>();
+								res.add(new SearchResult(all[i][0], 1));
+								tree.insert(finalWord, res);
+							} else {
+								int k = 0;
+								for (k = 0; k < res.size(); k++) {
+									ISearchResult temp = res.get(k);
+									if (temp.getId().equals(all[i][0])) { // found the same word in a certain doc
+										temp.setRank(temp.getRank() + 1); // update the rank
+										break;
+									}
+								}
+								if (k == res.size()) {
+									res.add(new SearchResult(all[i][0], 1)); // didn't find the same word in the doc
+								}
+							}
+						} catch(RuntimeErrorException e) {
+							res = new ArrayList<>();
+							res.add(new SearchResult(all[i][0], 1));
+							tree.insert(finalWord, res);
+						}
+					}
+				}
+			}
+			bw.close();
+		} catch(Exception e) {
+			
+		}
 	}
 	
 	private String[][] parseFile(String filePath) {
@@ -179,20 +229,119 @@ public class SearchEngine implements ISearchEngine {
 
 	@Override
 	public void deleteWebPage(String filePath) {
-		// TODO Auto-generated method stub
+		String[][] all = parseFile(filePath);
 
+		for (int i = 0; i < all.length; i++) {
+			String content = all[i][3];
+			String id = all[i][0];
+			String[] words = content.split("\\s+");
+			for (int j = 0; j < words.length; j++) {
+				String finalWord = words[j].trim().toLowerCase();
+				if (!finalWord.equals("")) { // checks for empty word or spaces {
+					List<ISearchResult> res;
+					try {
+						res = tree.search(finalWord);
+						if (res == null) { // the word isn't found in the tree
+							System.out.println("File has not been inserted");
+							return;
+						} else {
+							for (int k = 0; k < res.size(); k++) {
+								if (res.get(k).getId().equals(id)) {
+									res.remove(k);
+								}
+							}
+						}
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+			}
+		}
 	}
 
 	@Override
 	public List<ISearchResult> searchByWordWithRanking(String word) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+
+		if (word == null) {
+			throw new RuntimeErrorException(null);
+		}
+		if (word.equals("")) {
+			return new ArrayList<>();
+		}
+        String searchedWord = word.toLowerCase();
+
+        List<ISearchResult> searchResultList = tree.search(searchedWord);
+        if (searchResultList == null) {
+        	return new ArrayList<>();
+        }
+        int size = searchResultList.size();
+
+        for (int i = 0; i < size - 1; i++)   {
+               for (int j = 0; j < size-i-1; j++)  {
+                   if (searchResultList.get(j).getRank() > searchResultList.get(j+1).getRank()) {
+                        int tempRank = searchResultList.get(j).getRank();
+                        String tempId = searchResultList.get(j).getId();
+                        searchResultList.get(j).setRank(searchResultList.get(j+1).getRank());
+                        searchResultList.get(j).setId(searchResultList.get(j+1).getId());
+                        searchResultList.get(j+1).setRank(tempRank);
+                        searchResultList.get(j+1).setId(tempId);
+                   }
+               }
+        }
+
+        return searchResultList;
+
+    }
 
 	@Override
-	public List<ISearchResult> searchByMultipleWordWithRanking(String sentence) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    public List<ISearchResult> searchByMultipleWordWithRanking(String sentence) {
+
+
+        List<List<ISearchResult>> searchResultLists = new ArrayList();
+
+        String searchedSentence = sentence.toLowerCase();
+        String[] words = searchedSentence.split(" ");
+
+        for (int i = 0; i < words.length; i++) {
+            searchResultLists.add(tree.search(words[i]));
+        }
+
+        for (int i = 0; i < searchResultLists.size() - 1; i++) {  //AllWords
+            List<ISearchResult> intersectionSearchResult = new ArrayList();
+
+            for (int j = 0; j < searchResultLists.get(i).size(); j++) { //FirstWord
+
+                String firstId = searchResultLists.get(i).get(j).getId();
+                int firstRank = searchResultLists.get(i).get(j).getRank();
+
+
+                for (int t = 0; t < searchResultLists.get(i+1).size(); t++) { //SecondWord
+
+                    String secondId = searchResultLists.get(i+1).get(t).getId();
+                    int secondRank = searchResultLists.get(i+1).get(t).getRank();
+
+                    if (firstId.equals(secondId)) {
+                        int rank = 0;
+                        if (firstRank < secondRank) {
+                            rank = firstRank;
+                        } else {
+                            rank = secondRank;
+                        }
+                        ISearchResult x = new SearchResult(firstId, rank);
+                        intersectionSearchResult.add(x);
+
+                    }
+                }
+            }
+
+            searchResultLists.set(i + 1, intersectionSearchResult);
+
+        }
+
+
+
+        return searchResultLists.get(searchResultLists.size() - 1);
+
+    }
 
 }
