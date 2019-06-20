@@ -1,9 +1,6 @@
 package eg.edu.alexu.csd.filestructure.btree.cs19_cs61_cs12;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,21 +30,12 @@ public class SearchEngine implements ISearchEngine {
 		try {
 			String[][] all = this.parseFile(filePath);
 			
-			File fout = new File("parsing2.txt");
-			FileOutputStream fos = new FileOutputStream(fout);
-			BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
-			
 			for (int i = 0; i < all.length; i++) {
-				bw.newLine();
-				bw.write("the id of doc: " + all[i][0]);
-				bw.newLine();
 				String content = all[i][3];
 				String[] words = content.split("\\s+");
 				for (int j = 0; j < words.length; j++) {
 					String finalWord = words[j].trim().toLowerCase();
 					if (!finalWord.equals("")) { // checks for empty word or spaces
-						bw.write("word is: " + finalWord);
-						bw.newLine();
 						List<ISearchResult> res;
 						try {
 							res = tree.search(finalWord);
@@ -76,7 +64,6 @@ public class SearchEngine implements ISearchEngine {
 					}
 				}
 			}
-			bw.close();
 		} catch(Exception e) {
 			
 		}
@@ -92,20 +79,11 @@ public class SearchEngine implements ISearchEngine {
 			File inputFile = new File(filePath);
 
 			if (inputFile.exists()) {
-				
-				File fout = new File("parsing.txt");
-				FileOutputStream fos = new FileOutputStream(fout);
-
-				BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
 
 				DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 				DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
 				Document doc = dBuilder.parse(inputFile);
 				doc.getDocumentElement().normalize();
-
-				//System.out.println("Root element :" + doc.getDocumentElement().getNodeName());
-				bw.write("Root element :" + doc.getDocumentElement().getNodeName());
-				bw.newLine();
 						
 				NodeList nList = doc.getElementsByTagName("doc");
 				
@@ -116,39 +94,22 @@ public class SearchEngine implements ISearchEngine {
 				for (int temp = 0; temp < nList.getLength(); temp++) {
 
 					Node nNode = nList.item(temp);
-
-					//System.out.println("\nCurrent Element :" + nNode.getNodeName());
-					bw.write("\nCurrent Element :" + nNode.getNodeName());
-					bw.newLine();
 							
 					if (nNode.getNodeType() == Node.ELEMENT_NODE) {
 
 						Element eElement = (Element) nNode;
 
-						//System.out.println("Page id : " + eElement.getAttribute("id"));
-						bw.write("Page id : " + eElement.getAttribute("id"));
-						bw.newLine();
 						all[temp][0] = eElement.getAttribute("id");
-						
-						//System.out.println("Page url : " + eElement.getAttribute("url"));
-						bw.write("Page url : " + eElement.getAttribute("url"));
-						bw.newLine();
+
 						all[temp][1] = eElement.getAttribute("url");
-						
-						//System.out.println("Page title : " + eElement.getAttribute("title"));
-						bw.write("Page title : " + eElement.getAttribute("title"));
-						bw.newLine();
+
 						all[temp][2] = eElement.getAttribute("title");
-						
-						//System.out.println("String : " + eElement.getTextContent());
-						bw.write("String : " + eElement.getTextContent());
-						bw.newLine();
+
 						all[temp][3] = eElement.getTextContent();
 
 						
 					}
 				}
-				bw.close();
 				return all;
 			} else {
 				throw new RuntimeErrorException(null);
@@ -158,29 +119,6 @@ public class SearchEngine implements ISearchEngine {
 			throw new RuntimeErrorException(null);
 		}
 	}
-	
-	/*private boolean findFile(String name, File file) {
-		File[] list = file.listFiles();
-		if(list != null) {
-	        for (File fil : list) {
-	            if (fil.isDirectory()) {
-	                findFile(name, fil);
-	            } else if (name.equalsIgnoreCase(fil.getName())) {
-	            	this.path = fil.getPath();
-	            	this.found = true;
-	            	System.out.println(" ");
-	            	System.out.println("WebPage Path : " + this.path);
-	            }
-	        }
-	        if (found) {
-				return true;
-			} else {
-				return false;
-			}
-	    }
-	
-		return false;	
-	 }*/
 	
 	private void listFiles(File[] arr,int index,int level)  { 
         // terminate condition 
@@ -296,26 +234,29 @@ public class SearchEngine implements ISearchEngine {
 	@Override
     public List<ISearchResult> searchByMultipleWordWithRanking(String sentence) {
 
-
-        List<List<ISearchResult>> searchResultLists = new ArrayList();
+        List<List<ISearchResult>> searchResultLists = new ArrayList<>();
 
         String searchedSentence = sentence.toLowerCase();
-        String[] words = searchedSentence.split(" ");
+        String[] words = searchedSentence.split("\\s+");
 
         for (int i = 0; i < words.length; i++) {
-            searchResultLists.add(tree.search(words[i]));
+        	List<ISearchResult> temp = tree.search(words[i].trim());
+        	if (temp == null) {
+        		return new ArrayList<>();
+        	}
+            searchResultLists.add(temp);
         }
 
-        for (int i = 0; i < searchResultLists.size() - 1; i++) {  //AllWords
-            List<ISearchResult> intersectionSearchResult = new ArrayList();
+        for (int i = 0; i < searchResultLists.size() - 1; i++) {  // AllWords
+            List<ISearchResult> intersectionSearchResult = new ArrayList<>();
 
-            for (int j = 0; j < searchResultLists.get(i).size(); j++) { //FirstWord
+            for (int j = 0; j < searchResultLists.get(i).size(); j++) { // FirstWord
 
                 String firstId = searchResultLists.get(i).get(j).getId();
                 int firstRank = searchResultLists.get(i).get(j).getRank();
 
 
-                for (int t = 0; t < searchResultLists.get(i+1).size(); t++) { //SecondWord
+                for (int t = 0; t < searchResultLists.get(i+1).size(); t++) { // SecondWord
 
                     String secondId = searchResultLists.get(i+1).get(t).getId();
                     int secondRank = searchResultLists.get(i+1).get(t).getRank();
@@ -337,8 +278,6 @@ public class SearchEngine implements ISearchEngine {
             searchResultLists.set(i + 1, intersectionSearchResult);
 
         }
-
-
 
         return searchResultLists.get(searchResultLists.size() - 1);
 

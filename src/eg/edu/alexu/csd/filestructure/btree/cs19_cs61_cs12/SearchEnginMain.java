@@ -11,10 +11,10 @@ public class SearchEnginMain {
 		
 		
 		ISearchEngine searchEngine = new SearchEngine(2);
-		
+
 		//searchEngine.indexDirectory("Directory");
 		searchEngine.indexDirectory("Directory/Sub");
-		List<ISearchResult> res = searchEngine.searchByWordWithRanking("hello");
+		List<ISearchResult> res = searchEngine.searchByMultipleWordWithRanking("fucking 4rmt");
 		
 		for (int i = 0; i < res.size(); i++) {
 			System.out.println("id: " + res.get(i).getId());
