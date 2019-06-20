@@ -185,17 +185,21 @@ public class SearchEngine implements ISearchEngine {
 						} else {
 							for (int k = 0; k < res.size(); k++) {
 								if (res.get(k).getId().equals(id)) {
-									res.remove(k);
+									res.get(k).setRank(res.get(k).getRank() - 1);
+									if (res.get(k).getRank() == 0) {
+										res.remove(k);
+									}
 								}
 							}
 						}
 					} catch (Exception e) {
-						e.printStackTrace();
+						throw new RuntimeErrorException(null);
 					}
 				}
 			}
 		}
 	}
+
 
 	@Override
 	public List<ISearchResult> searchByWordWithRanking(String word) {

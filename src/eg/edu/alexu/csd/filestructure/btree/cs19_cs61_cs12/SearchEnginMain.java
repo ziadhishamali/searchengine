@@ -14,7 +14,7 @@ public class SearchEnginMain {
 
 		//searchEngine.indexDirectory("Directory");
 		searchEngine.indexDirectory("Directory/Sub");
-		List<ISearchResult> res = searchEngine.searchByMultipleWordWithRanking("fucking 4rmt");
+		List<ISearchResult> res = searchEngine.searchByWordWithRanking("4rmt");
 		
 		for (int i = 0; i < res.size(); i++) {
 			System.out.println("id: " + res.get(i).getId());
