@@ -7,10 +7,10 @@ public class SearchEnginMain {
 	public static void main(String[] args) {
 		
 		
-		ISearchEngine searchEngine = new SearchEngine();
+		ISearchEngine searchEngine = new SearchEngine(2);
 		
 		searchEngine.indexDirectory("Directory");
-		searchEngine.indexWebPage("wiki_04");
+		//searchEngine.indexWebPage("Directory/wiki_00");
 
 	}
 
