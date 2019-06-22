@@ -13,7 +13,7 @@ public class SearchEnginMain {
 		ISearchEngine searchEngine = new SearchEngine(2);
 
 		//searchEngine.indexDirectory("Directory");
-		searchEngine.indexDirectory("Directory/Sub");
+		searchEngine.indexDirectory("Directory");
 		List<ISearchResult> res = searchEngine.searchByWordWithRanking("4rmt");
 		
 		for (int i = 0; i < res.size(); i++) {

@@ -2,7 +2,10 @@ package eg.edu.alexu.csd.filestructure.btree.cs19_cs61_cs12;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
 
 import javax.management.RuntimeErrorException;
 import javax.xml.parsers.DocumentBuilder;
@@ -32,40 +35,45 @@ public class SearchEngine implements ISearchEngine {
 			
 			for (int i = 0; i < all.length; i++) {
 				String content = all[i][3];
+				String id = all[i][0];
 				String[] words = content.split("\\s+");
+				HashMap<String, Integer> indexTable = new HashMap<String, Integer>();
 				for (int j = 0; j < words.length; j++) {
 					String finalWord = words[j].trim().toLowerCase();
 					if (!finalWord.equals("")) { // checks for empty word or spaces
-						List<ISearchResult> res;
-						try {
-							res = tree.search(finalWord);
-							if (res == null) { // the word isn't found in the tree
-								res = new ArrayList<>();
-								res.add(new SearchResult(all[i][0], 1));
-								tree.insert(finalWord, res);
-							} else {
-								int k = 0;
-								for (k = 0; k < res.size(); k++) {
-									ISearchResult temp = res.get(k);
-									if (temp.getId().equals(all[i][0])) { // found the same word in a certain doc
-										temp.setRank(temp.getRank() + 1); // update the rank
-										break;
-									}
-								}
-								if (k == res.size()) {
-									res.add(new SearchResult(all[i][0], 1)); // didn't find the same word in the doc
-								}
-							}
-						} catch(RuntimeErrorException e) {
-							res = new ArrayList<>();
-							res.add(new SearchResult(all[i][0], 1));
-							tree.insert(finalWord, res);
+						Integer value = indexTable.putIfAbsent(finalWord, 1);
+						if (value != null) {
+							indexTable.put(finalWord, indexTable.get(finalWord) + 1);
 						}
+					}
+				}
+				String word = null;
+				List<ISearchResult> res;
+				Iterator<Entry<String, Integer>> itr = indexTable.entrySet().iterator();
+					
+					while (itr.hasNext()) {
+						Entry<String, Integer> entry = itr.next();
+						word = entry.getKey();
+						Integer rank = entry.getValue();
+						ISearchResult searchResult = new SearchResult(id, rank);
+						try {	
+						res = tree.search(word);
+						if (res == null) { // the word isn't found in the tree
+							res = new ArrayList<ISearchResult>();
+							res.add(searchResult);
+							tree.insert(word, res);
+						} else {
+							res.add(searchResult);
+						}
+					} catch (RuntimeErrorException e) {
+						res = new ArrayList<ISearchResult>();
+						res.add(searchResult);
+						tree.insert(word, res);
 					}
 				}
 			}
 		} catch(Exception e) {
-			
+			throw new RuntimeErrorException(null);
 		}
 	}
 	
@@ -161,7 +169,9 @@ public class SearchEngine implements ISearchEngine {
               
             // Calling recursive method 
             listFiles(arr,0,0);  
-       } 
+       } else {
+    	   throw new RuntimeErrorException(null);
+       }
 		
 	}
 
