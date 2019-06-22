@@ -1081,7 +1081,7 @@ public class UnitTest {
 		 * According to each change you should modify the expected variable to have the expected outcome.
 		 */
 		try {
-			searchEngine.indexDirectory("res");
+			searchEngine.indexDirectory("Directory");
 			List<ISearchResult> expected = Arrays.asList(new SearchResult[]{new SearchResult("7697605", 1), new SearchResult("7697611", 10)});
 			List<ISearchResult> actual = searchEngine.searchByMultipleWordWithRanking("   tHe  is  aRE   		");
 			for (ISearchResult searchRes : actual) {

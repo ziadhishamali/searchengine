@@ -254,11 +254,13 @@ public class SearchEngine implements ISearchEngine {
         String[] words = searchedSentence.split("\\s+");
 
         for (int i = 0; i < words.length; i++) {
-        	List<ISearchResult> temp = tree.search(words[i].trim());
-        	if (temp == null) {
-        		return new ArrayList<>();
+        	if (!words[i].trim().equals("")) {
+        		List<ISearchResult> temp = tree.search(words[i].trim());
+            	if (temp == null) {
+            		return new ArrayList<>();
+            	}
+                searchResultLists.add(temp);
         	}
-            searchResultLists.add(temp);
         }
 
         for (int i = 0; i < searchResultLists.size() - 1; i++) {  // AllWords
