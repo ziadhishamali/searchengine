@@ -202,6 +202,29 @@ public class DeleteTest {
 			TestRunner.fail("Fail to delete web page", e);
 		}
 	}
+	
+	/**
+	 * Test delete empty all the indexed web page.
+	 */
+	@Test
+	public void testDeleteAllIndexedWebPage2() {
+
+		ISearchEngine searchEngine = (ISearchEngine) TestRunner.getImplementationInstanceForInterface(ISearchEngine.class, new Object[]{100});
+
+		try {
+			searchEngine.indexWebPage("Directory3\\wiki_00");
+			searchEngine.indexWebPage("Directory3\\wiki_01");
+			searchEngine.indexWebPage("Directory3\\subfolder\\wiki_02");
+			searchEngine.deleteWebPage("Directory3\\wiki_01");
+			searchEngine.deleteWebPage("Directory3\\subfolder\\wiki_02");
+			searchEngine.deleteWebPage("Directory3\\wiki_00");
+
+			List<ISearchResult> actual = searchEngine.searchByWordWithRanking("ThE");
+			Assert.assertEquals(0, actual.size());
+		} catch (Throwable e) {
+			TestRunner.fail("Fail to delete web page", e);
+		}
+	}
 
 	private int getHeight (IBTreeNode<?, ?> node) {
 		if (node.isLeaf()) return 0;
